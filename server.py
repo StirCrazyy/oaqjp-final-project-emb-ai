@@ -4,36 +4,28 @@ Handles text input validation and emotion analysis.
 """
 
 from flask import Flask, request, jsonify, render_template
-from EmotionDetection.emotion_detection import emotion_detector  # Import function
+from EmotionDetection.emotion_detection import emotion_detector
 
 app = Flask(__name__)
 
-@app.route('/emotionDetector', methods=['GET','POST'])
+@app.route('/emotionDetector', methods=['GET', 'POST'])
 def analyze_emotion():
     """
-    Endpoint to analyze emotions from a given text.
-    
-    Request format:
-    {
-        "text": "<user_input_text>"
-    }
-    
-    Returns:
-    {
-        "response": "Formatted emotion analysis result"
-    }
-    
-    Handles missing text input with proper error messages.
+    Endpoint to analyze emotions from text.
+    Handles both GET and POST requests.
     """
-    data = request.get_json()
+    if request.method == 'GET':
+        text_to_analyze = request.args.get('textToAnalyze')
+    else:
+        data = request.get_json()
+        text_to_analyze = data.get('text') if data else None
 
-    if not data or "text" not in data:
+    if not text_to_analyze:
         return jsonify({"error": "Invalid text! Please try again!"}), 400
 
-    text_to_analyze = data["text"]
     emotions = emotion_detector(text_to_analyze)
 
-    if emotions["dominant_emotion"] is None:
+    if emotions.get("dominant_emotion") is None:
         return jsonify({"error": "Invalid text! Please try again!"}), 400
 
     formatted_response = (
@@ -43,11 +35,11 @@ def analyze_emotion():
         f"The dominant emotion is {emotions['dominant_emotion']}."
     )
 
-    return jsonify({"response": formatted_response})
+    return formatted_response
 
 @app.route("/")
 def render_index_page():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
